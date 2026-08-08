@@ -39,7 +39,7 @@ zerops:
       base: nodejs@22
       buildCommands:
         - echo "DEBUG RUNTIME_FRONTEND_API_URL is [$RUNTIME_FRONTEND_API_URL]"
-        - cd frontend && export VITE_API_URL=$RUNTIME_FRONTEND_API_URL && npm run build
+        - cd frontend && npm install && export VITE_API_URL=$RUNTIME_FRONTEND_API_URL && npm run build
       deployFiles:
         - frontend/dist/~
     run:
