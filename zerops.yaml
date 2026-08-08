@@ -38,6 +38,7 @@ zerops:
     build:
       base: nodejs@22
       buildCommands:
+        - echo "DEBUG VITE_API_URL is [$VITE_API_URL]"
         - cd frontend && npm install && npm run build
       deployFiles:
         - frontend/dist/~
