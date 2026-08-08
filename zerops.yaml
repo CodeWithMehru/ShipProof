@@ -3,7 +3,7 @@ zerops:
     build:
       base: nodejs@22
       buildCommands:
-        - cd api && npm install && npx prisma generate --schema=../prisma/schema.prisma
+        - cd api && npm install && npx prisma generate --schema=../prisma/schema.prisma && npm run build
       deployFiles:
         - api
         - prisma
@@ -13,7 +13,7 @@ zerops:
       ports:
         - port: 3000
           httpSupport: true
-      start: npm --prefix api run start:api
+      start: npm --prefix api run start
       envVariables:
         DATABASE_URL: ${db_connectionString}
         REDIS_URL: ${cache_connectionString}
@@ -22,14 +22,14 @@ zerops:
     build:
       base: nodejs@22
       buildCommands:
-        - cd worker && npm install && npx prisma generate --schema=../prisma/schema.prisma
+        - cd worker && npm install && npx prisma generate --schema=../prisma/schema.prisma && npm run build
       deployFiles:
         - worker
         - prisma
         - node_modules
     run:
       base: nodejs@22
-      start: npm --prefix worker run start:worker
+      start: npm --prefix worker run start
       envVariables:
         DATABASE_URL: ${db_connectionString}
         REDIS_URL: ${cache_connectionString}
