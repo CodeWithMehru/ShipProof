@@ -1,0 +1,48 @@
+zerops:
+  - setup: api
+    build:
+      base: nodejs@22
+      buildCommands:
+        - cd api && npm install
+        - cd prisma && npx prisma generate --schema=./schema.prisma
+      deployFiles:
+        - api
+        - prisma
+        - node_modules
+    run:
+      base: nodejs@22
+      ports:
+        - port: 3000
+          httpSupport: true
+      start: cd api && npm run start:api
+      envVariables:
+        DATABASE_URL: ${db_connectionString}
+        REDIS_URL: ${cache_connectionString}
+
+  - setup: worker
+    build:
+      base: nodejs@22
+      buildCommands:
+        - cd worker && npm install
+        - cd prisma && npx prisma generate --schema=./schema.prisma
+      deployFiles:
+        - worker
+        - prisma
+        - node_modules
+    run:
+      base: nodejs@22
+      start: cd worker && npm run start:worker
+      envVariables:
+        DATABASE_URL: ${db_connectionString}
+        REDIS_URL: ${cache_connectionString}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+
+  - setup: frontend
+    build:
+      base: nodejs@22
+      buildCommands:
+        - cd frontend && npm install && npm run build
+      deployFiles:
+        - frontend/dist/~
+    run:
+      base: static
