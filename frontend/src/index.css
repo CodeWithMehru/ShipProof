@@ -1,0 +1,221 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base Reset ────────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #0A0A0B;
+  color: #FAFAFA;
+  min-height: 100vh;
+}
+
+/* ─── Scrollbar Styling ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Selection ─────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(0, 229, 153, 0.3);
+  color: #FAFAFA;
+}
+
+/* ─── Focus States ──────────────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid #00E599;
+  outline-offset: 2px;
+}
+
+/* ─── Custom Components ─────────────────────────────────────────────── */
+@layer components {
+  .card {
+    @apply bg-base-card border border-border-subtle rounded-card;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .card-elevated {
+    @apply bg-base-elevated border border-border-subtle rounded-card;
+  }
+
+  .input-field {
+    @apply w-full bg-base-elevated border border-border-subtle rounded-input px-4 py-3
+           text-text-primary placeholder-text-dim
+           transition-all duration-200;
+    font-size: 0.9375rem;
+  }
+
+  .input-field:focus {
+    @apply border-accent outline-none;
+    box-shadow: 0 0 0 3px rgba(0, 229, 153, 0.1);
+  }
+
+  .input-field:hover:not(:focus) {
+    @apply border-border-strong;
+  }
+
+  .btn-primary {
+    @apply bg-accent text-base font-semibold px-6 py-3 rounded-input
+           transition-all duration-200 inline-flex items-center justify-center gap-2;
+  }
+
+  .btn-primary:hover {
+    @apply bg-accent-hover;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 229, 153, 0.25);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-border text-text-primary font-medium px-5 py-2.5 rounded-input
+           transition-all duration-200 inline-flex items-center justify-center gap-2;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-base-elevated border-border-strong;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-badge text-xs font-medium tracking-wide uppercase;
+  }
+
+  .badge-healthy {
+    @apply badge;
+    background: rgba(0, 229, 153, 0.12);
+    color: #00E599;
+  }
+
+  .badge-warning {
+    @apply badge;
+    background: rgba(245, 158, 11, 0.12);
+    color: #F59E0B;
+  }
+
+  .badge-danger {
+    @apply badge;
+    background: rgba(239, 68, 68, 0.12);
+    color: #EF4444;
+  }
+
+  .badge-pending {
+    @apply badge;
+    background: rgba(113, 113, 122, 0.12);
+    color: #71717A;
+  }
+
+  .badge-info {
+    @apply badge;
+    background: rgba(99, 102, 241, 0.12);
+    color: #6366F1;
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .table-row {
+    @apply border-b border-border-subtle transition-colors duration-150;
+  }
+
+  .table-row:hover {
+    @apply bg-base-elevated;
+  }
+
+  .label {
+    @apply text-sm font-medium text-text-secondary mb-1.5 block;
+  }
+
+  .code-block {
+    @apply bg-base border border-border-subtle rounded-input p-4 overflow-x-auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+
+  .stat-card {
+    @apply card p-6;
+  }
+
+  .stat-card .stat-value {
+    @apply text-4xl font-bold text-text-primary tracking-tight;
+  }
+
+  .stat-card .stat-label {
+    @apply text-sm text-text-muted mt-1;
+  }
+}
+
+/* ─── Animations ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* ─── Recharts Overrides ────────────────────────────────────────────── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.04);
+}
+
+.recharts-text {
+  fill: #71717A;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none;
+}

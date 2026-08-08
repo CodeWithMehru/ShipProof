@@ -1,0 +1,15 @@
+zerops:
+  - setup: frontend
+    build:
+      base: nodejs@22
+      buildCommands:
+        - npm install
+        - npm run build
+      deployFiles: dist
+      cache:
+        - node_modules
+    run:
+      base: static
+      ports:
+        - port: 80
+          httpSupport: true

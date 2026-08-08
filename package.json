@@ -1,0 +1,24 @@
+{
+  "name": "shipproof",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automated hackathon submission verification and sponsor-reporting platform",
+  "scripts": {
+    "dev:api": "cd api && npm run dev",
+    "dev:worker": "cd worker && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "db:migrate": "npx prisma migrate dev --schema=prisma/schema.prisma",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:generate": "npx prisma generate --schema=prisma/schema.prisma",
+    "db:push": "npx prisma db push --schema=prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "prisma": "^6.19.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "playwright": "^1.62.1"
+  }
+}

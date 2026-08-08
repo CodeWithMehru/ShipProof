@@ -1,0 +1,91 @@
+// prisma/schema.prisma — ShipProof database schema
+// Shared between api and worker services
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  role         String        // 'organizer' | 'judge'
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  reviews      JudgeReview[]
+
+  @@map("users")
+}
+
+model Submission {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectName      String               @map("project_name")
+  participantName  String               @map("participant_name")
+  participantEmail String               @map("participant_email")
+  liveUrl          String               @map("live_url")
+  githubRepoUrl    String               @map("github_repo_url")
+  demoVideoUrl     String               @map("demo_video_url")
+  submittedAt      DateTime             @default(now()) @map("submitted_at") @db.Timestamptz()
+  status           String               @default("pending") // pending | verifying | verified | flagged
+  verificationResults VerificationResult[]
+  uptimeLogs       UptimeLog[]
+  reviews          JudgeReview[]
+
+  @@map("submissions")
+}
+
+model VerificationResult {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  submissionId      String     @map("submission_id") @db.Uuid
+  submission        Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  isZeropsSubdomain Boolean?   @map("is_zerops_subdomain")
+  detectedServices  Json?      @map("detected_services") // parsed from zerops.yaml setup blocks
+  dependencyHints   Json?      @map("dependency_hints")   // soft signal, package.json / requirements.txt scan
+  commitAuthenticity String?   @map("commit_authenticity") // healthy | review_suggested | insufficient_data
+  commitTimeline    Json?      @map("commit_timeline")
+  checkedAt         DateTime   @default(now()) @map("checked_at") @db.Timestamptz()
+
+  @@map("verification_results")
+}
+
+model UptimeLog {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  submissionId   String     @map("submission_id") @db.Uuid
+  submission     Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  checkedAt      DateTime   @default(now()) @map("checked_at") @db.Timestamptz()
+  statusCode     Int?       @map("status_code")
+  responseTimeMs Int?       @map("response_time_ms")
+  isUp           Boolean?   @map("is_up")
+
+  @@map("uptime_logs")
+}
+
+model JudgeReview {
+  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  submissionId          String     @map("submission_id") @db.Uuid
+  submission            Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  judgeId               String     @map("judge_id") @db.Uuid
+  judge                 User       @relation(fields: [judgeId], references: [id])
+  dashboardShownInVideo Boolean    @default(false) @map("dashboard_shown_in_video")
+  scoreIdea             Int?       @map("score_idea")
+  scoreExecution        Int?       @map("score_execution")
+  scoreZeropsUsage      Int?       @map("score_zerops_usage")
+  notes                 String?
+  reviewedAt            DateTime   @default(now()) @map("reviewed_at") @db.Timestamptz()
+
+  @@map("judge_reviews")
+}
+
+model EventSettings {
+  id         String   @id @default("singleton")
+  eventStart DateTime @map("event_start") @db.Timestamptz()
+  eventEnd   DateTime @map("event_end") @db.Timestamptz()
+  judgingEnd  DateTime @map("judging_end") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("event_settings")
+}

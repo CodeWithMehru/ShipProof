@@ -1,0 +1,18 @@
+# ShipProof — Zerops project provisioning
+# Use once via: Zerops dashboard "Import project" or `zcli project project-import import.yaml`
+project:
+  name: shipproof
+services:
+  - hostname: frontend
+    type: static
+  - hostname: api
+    type: nodejs@22
+    enableSubdomainAccess: true
+  - hostname: worker
+    type: nodejs@22
+  - hostname: db
+    type: postgresql@16
+    mode: NON_HA
+  - hostname: cache
+    type: valkey@7.2
+    mode: NON_HA
