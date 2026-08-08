@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEventSettings, updateEventSettings, type EventSettings } from '../lib/api';
+import { getEventSettings, updateEventSettings } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { Settings, Calendar, Save, CheckCircle, AlertTriangle } from 'lucide-react';
 
