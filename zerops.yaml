@@ -37,6 +37,8 @@ zerops:
   - setup: frontend
     build:
       base: nodejs@22
+      envVariables:
+        VITE_API_URL: ${FRONTEND_API_URL}
       buildCommands:
         - echo "DEBUG VITE_API_URL is [$VITE_API_URL]"
         - cd frontend && npm install && npm run build
