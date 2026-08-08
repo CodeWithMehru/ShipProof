@@ -3,8 +3,7 @@ zerops:
     build:
       base: nodejs@22
       buildCommands:
-        - cd api && npm install
-        - cd prisma && npx prisma generate --schema=./schema.prisma
+        - cd api && npm install && npx prisma generate --schema=../prisma/schema.prisma
       deployFiles:
         - api
         - prisma
@@ -23,8 +22,7 @@ zerops:
     build:
       base: nodejs@22
       buildCommands:
-        - cd worker && npm install
-        - cd prisma && npx prisma generate --schema=./schema.prisma
+        - cd worker && npm install && npx prisma generate --schema=../prisma/schema.prisma
       deployFiles:
         - worker
         - prisma
