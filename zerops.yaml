@@ -33,7 +33,6 @@ zerops:
       envVariables:
         DATABASE_URL: ${db_connectionString}
         REDIS_URL: ${cache_connectionString}
-        GITHUB_TOKEN: ${GITHUB_TOKEN}
 
   - setup: frontend
     build:
