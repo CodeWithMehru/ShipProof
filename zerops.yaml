@@ -15,7 +15,7 @@ zerops:
           httpSupport: true
       start: npm --prefix api run start
       envVariables:
-        DATABASE_URL: ${db_connectionString}
+        DATABASE_URL: ${db_connectionString}/${db_dbName}
         REDIS_URL: ${cache_connectionString}
 
   - setup: worker
@@ -31,7 +31,7 @@ zerops:
       base: nodejs@22
       start: npm --prefix worker run start
       envVariables:
-        DATABASE_URL: ${db_connectionString}
+        DATABASE_URL: ${db_connectionString}/${db_dbName}
         REDIS_URL: ${cache_connectionString}
 
   - setup: frontend
