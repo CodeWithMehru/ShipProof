@@ -207,6 +207,9 @@ export interface EventSettings {
   eventStart: string;
   eventEnd: string;
   judgingEnd: string;
+  hostingDomainPattern: string;
+  requiredConfigFile: string;
+  platformDisplayName: string;
   updatedAt: string;
 }
 
@@ -216,7 +219,14 @@ export function getEventSettings(token: string): Promise<EventSettings> {
 
 export function updateEventSettings(
   token: string,
-  data: { eventStart: string; eventEnd: string; judgingEnd: string }
+  data: { 
+    eventStart: string; 
+    eventEnd: string; 
+    judgingEnd: string;
+    hostingDomainPattern: string;
+    requiredConfigFile: string;
+    platformDisplayName: string;
+  }
 ): Promise<EventSettings> {
   return request('/api/settings/event', { method: 'PUT', body: data, token });
 }

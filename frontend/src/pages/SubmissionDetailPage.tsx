@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getSubmissionDetail, deleteSubmission, type SubmissionDetail } from '../lib/api';
+import { getSubmissionDetail, deleteSubmission, getEventSettings, type SubmissionDetail } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { UptimeChart } from '../components/UptimeChart';
@@ -26,6 +26,8 @@ export function SubmissionDetailPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [platformDisplayName, setPlatformDisplayName] = useState('Zerops');
+  const [requiredConfigFile, setRequiredConfigFile] = useState('zerops.yaml');
 
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login'); return; }
@@ -36,8 +38,15 @@ export function SubmissionDetailPage() {
     if (!token || !id) return;
     setLoading(true);
     try {
-      const d = await getSubmissionDetail(token, id);
+      const [d, settings] = await Promise.all([
+        getSubmissionDetail(token, id),
+        getEventSettings(token)
+      ]);
       setData(d);
+      if (settings) {
+        setPlatformDisplayName(settings.platformDisplayName);
+        setRequiredConfigFile(settings.requiredConfigFile);
+      }
     } catch (err) {
       console.error('Failed to load submission detail:', err);
     } finally {
@@ -176,14 +185,14 @@ export function SubmissionDetailPage() {
               Architecture Analysis
             </h2>
 
-            {/* Zerops subdomain detection */}
+            {/* Hosting subdomain detection */}
             <div className="flex items-center gap-3 mb-4 p-3 card-elevated rounded-lg">
               <Server size={16} className="text-text-dim" />
-              <span className="text-sm text-text-secondary">Zerops Subdomain Detected:</span>
+              <span className="text-sm text-text-secondary">{platformDisplayName} Subdomain Detected:</span>
               {vr?.isZeropsSubdomain ? (
                 <span className="flex items-center gap-1.5 text-status-healthy text-sm font-medium">
                   <CheckCircle size={14} />
-                  Yes — URL matches *.zerops.app pattern
+                  Yes — URL matches expected pattern
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-status-warning text-sm">
@@ -193,11 +202,11 @@ export function SubmissionDetailPage() {
               )}
             </div>
 
-            {/* Detected services from zerops.yaml */}
+            {/* Detected services from config file */}
             {detectedServices?.found ? (
               <div className="mb-4">
                 <p className="text-sm text-text-secondary mb-2">
-                  <span className="text-accent font-medium">{detectedServices.services.length}</span> service{detectedServices.services.length !== 1 ? 's' : ''} declared in <span className="mono text-text-primary">zerops.yaml</span>
+                  <span className="text-accent font-medium">{detectedServices.services.length}</span> service{detectedServices.services.length !== 1 ? 's' : ''} declared in <span className="mono text-text-primary">{requiredConfigFile}</span>
                 </p>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {detectedServices.services.map((svc) => (
@@ -207,7 +216,7 @@ export function SubmissionDetailPage() {
                 {detectedServices.raw && (
                   <details className="group">
                     <summary className="text-xs text-text-muted cursor-pointer hover:text-text-secondary transition-colors">
-                      Show raw zerops.yaml
+                      Show raw {requiredConfigFile}
                     </summary>
                     <pre className="code-block mt-2 text-xs text-text-secondary">
                       {detectedServices.raw}
@@ -216,14 +225,14 @@ export function SubmissionDetailPage() {
                 )}
                 <p className="text-xs text-text-dim mt-2 flex items-start gap-1.5">
                   <AlertTriangle size={12} className="text-status-warning mt-0.5 flex-shrink-0" />
-                  zerops.yaml only describes app-tier services built from source — managed services (PostgreSQL, Valkey, etc.) are provisioned on the Zerops dashboard and cannot be verified from this file.
+                  {requiredConfigFile} only describes app-tier services built from source — managed services are provisioned on the {platformDisplayName} dashboard and cannot be verified from this file.
                 </p>
               </div>
             ) : (
               <div className="p-3 card-elevated rounded-lg mb-4">
                 <p className="text-sm text-status-warning flex items-center gap-2">
                   <AlertTriangle size={14} />
-                  zerops.yaml not found at repo root — manual review needed
+                  {requiredConfigFile} not found at repo root — manual review needed
                 </p>
               </div>
             )}
@@ -278,6 +287,7 @@ export function SubmissionDetailPage() {
                 notes: myReview.notes,
               } : undefined}
               onReviewSubmitted={fetchData}
+              platformDisplayName={platformDisplayName}
             />
           </div>
 

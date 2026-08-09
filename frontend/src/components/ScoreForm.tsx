@@ -13,9 +13,10 @@ interface ScoreFormProps {
     notes: string | null;
   };
   onReviewSubmitted: () => void;
+  platformDisplayName: string;
 }
 
-export function ScoreForm({ submissionId, existingReview, onReviewSubmitted }: ScoreFormProps) {
+export function ScoreForm({ submissionId, existingReview, onReviewSubmitted, platformDisplayName }: ScoreFormProps) {
   const { token } = useAuth();
   const [dashboardShown, setDashboardShown] = useState(existingReview?.dashboardShownInVideo ?? false);
   const [scoreIdea, setScoreIdea] = useState<number>(existingReview?.scoreIdea ?? 5);
@@ -80,7 +81,7 @@ export function ScoreForm({ submissionId, existingReview, onReviewSubmitted }: S
           <div>
             <p className="text-sm font-medium text-text-primary">Dashboard shown in video?</p>
             <p className="text-xs text-text-dim mt-0.5">
-              Confirm if the demo video includes a view of the participant's Zerops project dashboard showing their services list. This is a human-verified check — not automated.
+              Confirm if the demo video includes a view of the participant's {platformDisplayName} project dashboard showing their services list. This is a human-verified check — not automated.
             </p>
           </div>
         </label>
@@ -90,7 +91,7 @@ export function ScoreForm({ submissionId, existingReview, onReviewSubmitted }: S
       <div className="grid grid-cols-3 gap-4">
         <ScoreSlider label="Idea" value={scoreIdea} onChange={setScoreIdea} />
         <ScoreSlider label="Execution" value={scoreExecution} onChange={setScoreExecution} />
-        <ScoreSlider label="Zerops Usage" value={scoreZerops} onChange={setScoreZerops} />
+        <ScoreSlider label={`${platformDisplayName} Usage`} value={scoreZerops} onChange={setScoreZerops} />
       </div>
 
       {/* Notes */}

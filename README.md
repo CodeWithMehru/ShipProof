@@ -325,3 +325,7 @@ The worker picks up the new event window within 5 minutes (the in-memory cache T
 
 The Deployment Instructions section above mentions `EVENT_START`, `EVENT_END`, and `JUDGING_END` environment variables. Those are now obsolete — **do not set them**. The worker no longer reads them. All date configuration goes through the `/settings` page and the `event_settings` database table.
 
+
+## Reusing ShipProof for a Different Platform
+
+The hosting domain pattern, required config filename, and platform display name are configurable per-hackathon from the `/settings` page under "Verification Configuration". For example, to reuse ShipProof for a Vercel-focused hackathon, an organizer would simply set the pattern to `\.vercel\.app\b`, the config file to `vercel.json`, and the display name to `Vercel` via the UI without requiring any code changes or redeployments. Note that this configurability covers hosting-pattern and filename detection specifically — it is not a fully generic, universal verification engine for all possible architectures.

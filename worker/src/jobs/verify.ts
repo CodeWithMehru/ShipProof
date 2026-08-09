@@ -1,13 +1,7 @@
 import prisma from '../lib/prisma';
 import { parseRepoUrl, fetchFileContent, fetchCommits, GitHubCommit } from '../lib/github';
 import { parse as parseYaml } from 'yaml';
-
-/**
- * ZEROPS SUBDOMAIN PATTERN
- * Any URL hosted on *.zerops.app is a Zerops-deployed service.
- * Examples: recipe-nodejs-3000.prg1.zerops.app, api-808-3000.app1.zerops.app
- */
-const ZEROPS_SUBDOMAIN_REGEX = /\.zerops\.app\b/i;
+import { getEventSettings } from '../lib/eventSettings';
 
 /**
  * Known database/cache client library names — used as a soft signal (not proof)
@@ -47,6 +41,9 @@ export async function runVerification(submissionId: string): Promise<void> {
     return;
   }
 
+  const eventSettings = await getEventSettings();
+  const { eventStart, eventEnd } = eventSettings;
+
   // ─── LAYER 1: Liveness Check ─────────────────────────────────────────
   let isUp = false;
   let statusCode: number | null = null;
@@ -85,8 +82,9 @@ export async function runVerification(submissionId: string): Promise<void> {
     },
   });
 
-  // Check if URL matches Zerops subdomain pattern
-  isZeropsSubdomain = ZEROPS_SUBDOMAIN_REGEX.test(submission.liveUrl);
+  // Check if URL matches the configured hosting domain pattern
+  const domainRegex = new RegExp(eventSettings.hostingDomainPattern, 'i');
+  isZeropsSubdomain = domainRegex.test(submission.liveUrl);
 
   // ─── LAYER 2: Architecture Check via GitHub ──────────────────────────
   const repoInfo = parseRepoUrl(submission.githubRepoUrl);
@@ -101,8 +99,9 @@ export async function runVerification(submissionId: string): Promise<void> {
   };
 
   if (repoInfo) {
-    // Fetch and parse zerops.yaml
-    const zeropsFile = await fetchFileContent(repoInfo.owner, repoInfo.repo, 'zerops.yaml');
+    console.log('[Verify] using requiredConfigFile:', eventSettings.requiredConfigFile);
+    // Fetch and parse required config file
+    const zeropsFile = await fetchFileContent(repoInfo.owner, repoInfo.repo, eventSettings.requiredConfigFile);
     if (zeropsFile.found) {
       try {
         const parsed = parseYaml(zeropsFile.content) as {
@@ -118,11 +117,11 @@ export async function runVerification(submissionId: string): Promise<void> {
           };
         }
       } catch (e) {
-        console.error('[Verify] Failed to parse zerops.yaml:', e);
+        console.error(`[Verify] Failed to parse ${eventSettings.requiredConfigFile}:`, e);
         detectedServices = { services: [], found: true }; // File exists but unparseable
       }
     } else {
-      // zerops.yaml not found at root — note for manual review
+      // config file not found at root — note for manual review
       detectedServices = {
         services: [],
         found: false,
@@ -163,10 +162,7 @@ export async function runVerification(submissionId: string): Promise<void> {
       console.log(`[Verify] Only ${commits.length} commits — marking as insufficient_data`);
     } else {
       // Get event window from DB (via cached settings) — fallback to wide window
-      const { getEventSettings } = await import('../lib/eventSettings');
-      const settings = await getEventSettings();
-      const eventStart = settings.eventStart;
-      const eventEnd = settings.eventEnd;
+
       console.log(`[Verify] Event window: ${eventStart.toISOString()} → ${eventEnd.toISOString()}`);
 
       // Build timeline: group commits by hour within the event window

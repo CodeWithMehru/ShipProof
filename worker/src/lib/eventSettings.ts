@@ -4,6 +4,9 @@ interface EventSettingsCache {
   eventStart: Date;
   eventEnd: Date;
   judgingEnd: Date;
+  hostingDomainPattern: string;
+  requiredConfigFile: string;
+  platformDisplayName: string;
 }
 
 let cache: EventSettingsCache | null = null;
@@ -32,6 +35,9 @@ export async function getEventSettings(): Promise<EventSettingsCache> {
         eventStart: settings.eventStart,
         eventEnd: settings.eventEnd,
         judgingEnd: settings.judgingEnd,
+        hostingDomainPattern: settings.hostingDomainPattern,
+        requiredConfigFile: settings.requiredConfigFile,
+        platformDisplayName: settings.platformDisplayName,
       };
       console.log(`[EventSettings] Loaded from DB — window: ${cache.eventStart.toISOString()} → ${cache.eventEnd.toISOString()}`);
     } else {
@@ -40,6 +46,9 @@ export async function getEventSettings(): Promise<EventSettingsCache> {
         eventStart: new Date('2026-01-01T00:00:00Z'),
         eventEnd: new Date('2026-12-31T23:59:59Z'),
         judgingEnd: new Date('2027-01-31T23:59:59Z'),
+        hostingDomainPattern: '\\.zerops\\.app\\b',
+        requiredConfigFile: 'zerops.yaml',
+        platformDisplayName: 'Zerops',
       };
       console.warn('[EventSettings] No settings row found — using fallback defaults');
     }
@@ -59,6 +68,9 @@ export async function getEventSettings(): Promise<EventSettingsCache> {
       eventStart: new Date('2026-01-01T00:00:00Z'),
       eventEnd: new Date('2026-12-31T23:59:59Z'),
       judgingEnd: new Date('2027-01-31T23:59:59Z'),
+      hostingDomainPattern: '\\.zerops\\.app\\b',
+      requiredConfigFile: 'zerops.yaml',
+      platformDisplayName: 'Zerops',
     };
   }
 }

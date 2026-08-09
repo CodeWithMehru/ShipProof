@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getEventSettings, updateEventSettings, clearAllSubmissions } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { Settings, Calendar, Save, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { Settings, Calendar, Save, CheckCircle, AlertTriangle, Trash2, Server } from 'lucide-react';
 
 /**
  * Convert an ISO date string to a `datetime-local` input value (YYYY-MM-DDTHH:MM).
@@ -34,6 +34,10 @@ export function SettingsPage() {
   const [eventEnd, setEventEnd] = useState('');
   const [judgingEnd, setJudgingEnd] = useState('');
 
+  const [hostingDomainPattern, setHostingDomainPattern] = useState('');
+  const [requiredConfigFile, setRequiredConfigFile] = useState('');
+  const [platformDisplayName, setPlatformDisplayName] = useState('');
+
   // Clear-all confirmation state
   const [clearConfirm, setClearConfirm] = useState('');
   const [clearing, setClearing] = useState(false);
@@ -53,6 +57,9 @@ export function SettingsPage() {
       setEventStart(toDatetimeLocal(data.eventStart));
       setEventEnd(toDatetimeLocal(data.eventEnd));
       setJudgingEnd(toDatetimeLocal(data.judgingEnd));
+      setHostingDomainPattern(data.hostingDomainPattern || '');
+      setRequiredConfigFile(data.requiredConfigFile || '');
+      setPlatformDisplayName(data.platformDisplayName || '');
       setLastUpdated(data.updatedAt);
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -73,6 +80,9 @@ export function SettingsPage() {
         eventStart: fromDatetimeLocal(eventStart),
         eventEnd: fromDatetimeLocal(eventEnd),
         judgingEnd: fromDatetimeLocal(judgingEnd),
+        hostingDomainPattern,
+        requiredConfigFile,
+        platformDisplayName,
       });
       setLastUpdated(data.updatedAt);
       setSuccess(true);
@@ -127,8 +137,7 @@ export function SettingsPage() {
         <h1 className="text-3xl font-bold text-text-primary tracking-tight">Event Settings</h1>
       </div>
       <p className="text-text-muted text-sm mb-8">
-        Configure the hackathon event window and judging period. The worker uses these dates
-        to evaluate commit authenticity.
+        Configure the hackathon event window, judging period, and deployment verification parameters.
         {lastUpdated && (
           <span className="text-text-dim block mt-1 mono text-xs">
             Last updated: {new Date(lastUpdated).toLocaleString()}
@@ -136,53 +145,118 @@ export function SettingsPage() {
         )}
       </p>
 
-      {/* Form */}
-      <div className="card p-6 space-y-6">
-        <DateField
-          label="Event Start"
-          description="When the hackathon officially begins. Commits before this date are flagged as pre-event."
-          value={eventStart}
-          onChange={setEventStart}
-          icon={<Calendar size={16} />}
-        />
+      {error && (
+        <div className="bg-status-danger/10 border border-status-danger text-status-danger px-4 py-3 rounded-card text-sm mb-6 flex items-start gap-2">
+          <AlertTriangle size={16} className="mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
 
-        <DateField
-          label="Event End"
-          description="When the hackathon officially ends. The commit window closes here."
-          value={eventEnd}
-          onChange={setEventEnd}
-          icon={<Calendar size={16} />}
-        />
+      {success && (
+        <div className="bg-status-healthy/10 border border-status-healthy text-status-healthy px-4 py-3 rounded-card text-sm mb-6 flex items-center gap-2">
+          <CheckCircle size={16} />
+          <span>Settings saved successfully</span>
+        </div>
+      )}
 
-        <div className="border-t border-border-subtle pt-6">
-          <DateField
-            label="Judging End"
-            description="Deadline for judges to submit their reviews. Must be on or after the event end date."
-            value={judgingEnd}
-            onChange={setJudgingEnd}
-            icon={<Calendar size={16} />}
-          />
+      <div className="space-y-8">
+        {/* Event Dates Section */}
+        <div className="card p-6">
+          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border-subtle">
+            <Calendar className="text-text-muted" size={18} />
+            <h2 className="text-lg font-semibold text-text-primary">Event Dates</h2>
+          </div>
+          <div className="space-y-6">
+            <DateField
+              label="Event Start"
+              description="When the hackathon officially begins. Commits before this date are flagged as pre-event."
+              value={eventStart}
+              onChange={setEventStart}
+              icon={<Calendar size={16} />}
+            />
+
+            <DateField
+              label="Event End"
+              description="When the hackathon officially ends. The commit window closes here."
+              value={eventEnd}
+              onChange={setEventEnd}
+              icon={<Calendar size={16} />}
+            />
+
+            <DateField
+              label="Judging End"
+              description="Deadline for judges to submit their reviews. Must be on or after the event end date."
+              value={judgingEnd}
+              onChange={setJudgingEnd}
+              icon={<Calendar size={16} />}
+            />
+          </div>
         </div>
 
-        {/* Error / success messages */}
-        {error && (
-          <div className="flex items-center gap-2 text-status-danger text-sm p-3 bg-status-danger/8 rounded-lg">
-            <AlertTriangle size={16} />
-            {error}
+        {/* Verification Configuration Section */}
+        <div className="card p-6">
+          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border-subtle">
+            <Server className="text-text-muted" size={18} />
+            <h2 className="text-lg font-semibold text-text-primary">Verification Configuration</h2>
           </div>
-        )}
 
-        {success && (
-          <div className="flex items-center gap-2 text-status-healthy text-sm p-3 bg-status-healthy/8 rounded-lg">
-            <CheckCircle size={16} />
-            Settings saved successfully. The worker will pick up the new dates within 5 minutes.
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                Hosting Domain Pattern
+              </label>
+              <input
+                type="text"
+                value={hostingDomainPattern}
+                onChange={(e) => setHostingDomainPattern(e.target.value)}
+                className="input-field"
+                placeholder="\.zerops\.app\b"
+              />
+              <p className="text-xs text-text-dim mt-1.5 leading-relaxed">
+                Regex pattern used by the worker to confirm the live URL is hosted on the required platform.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                Required Config File
+              </label>
+              <input
+                type="text"
+                value={requiredConfigFile}
+                onChange={(e) => setRequiredConfigFile(e.target.value)}
+                className="input-field"
+                placeholder="zerops.yaml"
+              />
+              <p className="text-xs text-text-dim mt-1.5 leading-relaxed">
+                The filename the worker will look for in the root of the GitHub repository.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                Platform Display Name
+              </label>
+              <input
+                type="text"
+                value={platformDisplayName}
+                onChange={(e) => setPlatformDisplayName(e.target.value)}
+                className="input-field"
+                placeholder="Zerops"
+              />
+              <p className="text-xs text-text-dim mt-1.5 leading-relaxed">
+                The display name shown in the UI for dashboard columns, badges, and score labels.
+              </p>
+            </div>
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Save button */}
+      {/* Save Button */}
+      <div className="flex justify-end mt-6 mb-12">
         <button
           onClick={handleSave}
-          disabled={saving || !eventStart || !eventEnd || !judgingEnd}
+          disabled={saving}
           className="btn-primary w-full"
         >
           <Save size={16} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSubmissions, deleteSubmission, type SubmissionSummary } from '../lib/api';
+import { getSubmissions, deleteSubmission, getEventSettings, type SubmissionSummary } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
@@ -26,6 +26,7 @@ export function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [platformDisplayName, setPlatformDisplayName] = useState('Zerops');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -39,8 +40,14 @@ export function DashboardPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await getSubmissions(token, statusFilter);
+      const [data, settings] = await Promise.all([
+        getSubmissions(token, statusFilter),
+        getEventSettings(token)
+      ]);
       setSubmissions(data);
+      if (settings?.platformDisplayName) {
+        setPlatformDisplayName(settings.platformDisplayName);
+      }
     } catch (err) {
       console.error('Failed to load submissions:', err);
     } finally {
@@ -188,7 +195,7 @@ export function DashboardPage() {
                 <th className="text-center text-xs font-medium text-text-dim uppercase tracking-wider px-4 py-3">
                   <span className="flex items-center justify-center gap-1"><Activity size={12} />Live</span>
                 </th>
-                <th className="text-center text-xs font-medium text-text-dim uppercase tracking-wider px-4 py-3">Zerops</th>
+                <th className="text-center text-xs font-medium text-text-dim uppercase tracking-wider px-4 py-3">{platformDisplayName}</th>
                 <th className="text-center text-xs font-medium text-text-dim uppercase tracking-wider px-4 py-3">
                   <span className="flex items-center justify-center gap-1"><Layers size={12} />Services</span>
                 </th>

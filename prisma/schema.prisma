@@ -86,6 +86,9 @@ model EventSettings {
   eventEnd   DateTime @map("event_end") @db.Timestamptz()
   judgingEnd  DateTime @map("judging_end") @db.Timestamptz()
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  hostingDomainPattern String @default("\\.zerops\\.app\\b") @map("hosting_domain_pattern")
+  requiredConfigFile   String @default("zerops.yaml") @map("required_config_file")
+  platformDisplayName  String @default("Zerops") @map("platform_display_name")
 
   @@map("event_settings")
 }

@@ -22,6 +22,9 @@ settingsRouter.get('/event', authMiddleware, async (_req: Request, res: Response
           eventStart: new Date('2026-08-01T00:00:00Z'),
           eventEnd: new Date('2026-08-31T23:59:59Z'),
           judgingEnd: new Date('2026-09-07T23:59:59Z'),
+          hostingDomainPattern: '\\.zerops\\.app\\b',
+          requiredConfigFile: 'zerops.yaml',
+          platformDisplayName: 'Zerops',
         },
       });
     }
@@ -30,6 +33,9 @@ settingsRouter.get('/event', authMiddleware, async (_req: Request, res: Response
       eventStart: settings.eventStart.toISOString(),
       eventEnd: settings.eventEnd.toISOString(),
       judgingEnd: settings.judgingEnd.toISOString(),
+      hostingDomainPattern: settings.hostingDomainPattern,
+      requiredConfigFile: settings.requiredConfigFile,
+      platformDisplayName: settings.platformDisplayName,
       updatedAt: settings.updatedAt.toISOString(),
     });
   } catch (error) {
@@ -44,10 +50,26 @@ settingsRouter.get('/event', authMiddleware, async (_req: Request, res: Response
  */
 settingsRouter.put('/event', authMiddleware, requireRole('organizer'), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { eventStart, eventEnd, judgingEnd } = req.body;
+    const { 
+      eventStart, 
+      eventEnd, 
+      judgingEnd,
+      hostingDomainPattern,
+      requiredConfigFile,
+      platformDisplayName
+    } = req.body;
 
     if (!eventStart || !eventEnd || !judgingEnd) {
       res.status(400).json({ error: 'eventStart, eventEnd, and judgingEnd are all required' });
+      return;
+    }
+
+    if (
+      typeof hostingDomainPattern !== 'string' ||
+      typeof requiredConfigFile !== 'string' ||
+      typeof platformDisplayName !== 'string'
+    ) {
+      res.status(400).json({ error: 'Verification configuration fields are required and must be strings' });
       return;
     }
 
@@ -77,12 +99,18 @@ settingsRouter.put('/event', authMiddleware, requireRole('organizer'), async (re
         eventStart: start,
         eventEnd: end,
         judgingEnd: judging,
+        hostingDomainPattern,
+        requiredConfigFile,
+        platformDisplayName,
       },
       create: {
         id: 'singleton',
         eventStart: start,
         eventEnd: end,
         judgingEnd: judging,
+        hostingDomainPattern,
+        requiredConfigFile,
+        platformDisplayName,
       },
     });
 
@@ -92,6 +120,9 @@ settingsRouter.put('/event', authMiddleware, requireRole('organizer'), async (re
       eventStart: settings.eventStart.toISOString(),
       eventEnd: settings.eventEnd.toISOString(),
       judgingEnd: settings.judgingEnd.toISOString(),
+      hostingDomainPattern: settings.hostingDomainPattern,
+      requiredConfigFile: settings.requiredConfigFile,
+      platformDisplayName: settings.platformDisplayName,
       updatedAt: settings.updatedAt.toISOString(),
     });
   } catch (error) {
