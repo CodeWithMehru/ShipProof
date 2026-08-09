@@ -81,6 +81,14 @@ export function getSubmissions(token: string, status?: string): Promise<Submissi
   return request(`/api/submissions${query}`, { token });
 }
 
+export function deleteSubmission(token: string, id: string): Promise<{ message: string }> {
+  return request(`/api/submissions/${id}`, { method: 'DELETE', token });
+}
+
+export function clearAllSubmissions(token: string): Promise<{ message: string; count: number }> {
+  return request('/api/submissions', { method: 'DELETE', token });
+}
+
 export interface VerificationResult {
   id: string;
   submissionId: string;

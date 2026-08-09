@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEventSettings, updateEventSettings } from '../lib/api';
+import { motion } from 'framer-motion';
+import { getEventSettings, updateEventSettings, clearAllSubmissions } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { Settings, Calendar, Save, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Settings, Calendar, Save, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
 
 /**
  * Convert an ISO date string to a `datetime-local` input value (YYYY-MM-DDTHH:MM).
@@ -32,6 +33,12 @@ export function SettingsPage() {
   const [eventStart, setEventStart] = useState('');
   const [eventEnd, setEventEnd] = useState('');
   const [judgingEnd, setJudgingEnd] = useState('');
+
+  // Clear-all confirmation state
+  const [clearConfirm, setClearConfirm] = useState('');
+  const [clearing, setClearing] = useState(false);
+  const [clearSuccess, setClearSuccess] = useState<string | null>(null);
+  const [clearError, setClearError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login'); return; }
@@ -77,6 +84,23 @@ export function SettingsPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!token) return;
+    if (clearConfirm !== 'DELETE ALL') return;
+    setClearing(true);
+    setClearError(null);
+    setClearSuccess(null);
+    try {
+      const result = await clearAllSubmissions(token);
+      setClearSuccess(result.message);
+      setClearConfirm('');
+    } catch (err) {
+      setClearError((err as Error).message || 'Failed to clear submissions');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
@@ -90,7 +114,11 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 animate-fade-in">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-2xl mx-auto px-6 py-12"
+    >
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
@@ -169,7 +197,60 @@ export function SettingsPage() {
           any new verification jobs will use the updated dates automatically — no restart required.
         </p>
       </div>
-    </div>
+
+      {/* ─── Danger Zone ─────────────────────────────────────────── */}
+      <div className="mt-10 border border-status-danger/30 rounded-card overflow-hidden">
+        <div className="bg-status-danger/8 px-6 py-4 flex items-center gap-3">
+          <Trash2 size={18} className="text-status-danger" />
+          <div>
+            <h2 className="text-sm font-semibold text-status-danger uppercase tracking-wider">Danger Zone</h2>
+            <p className="text-xs text-text-muted mt-0.5">These actions are irreversible. Use them only when resetting the platform between hackathons.</p>
+          </div>
+        </div>
+        <div className="p-6">
+          <h3 className="text-sm font-semibold text-text-primary mb-1">Clear all submissions</h3>
+          <p className="text-xs text-text-dim mb-4 leading-relaxed">
+            Permanently deletes every submission row, along with all its verification results,
+            uptime logs, and judge reviews. This is intended to be used by an organizer once
+            judging for a hackathon is complete and the platform is being reset for the next event.
+          </p>
+
+          {clearSuccess && (
+            <div className="flex items-center gap-2 text-status-healthy text-sm p-3 bg-status-healthy/8 rounded-lg mb-4">
+              <CheckCircle size={16} />
+              {clearSuccess}
+            </div>
+          )}
+          {clearError && (
+            <div className="flex items-center gap-2 text-status-danger text-sm p-3 bg-status-danger/8 rounded-lg mb-4">
+              <AlertTriangle size={16} />
+              {clearError}
+            </div>
+          )}
+
+          <label className="block text-xs text-text-secondary mb-2">
+            Type <span className="mono font-bold text-text-primary">DELETE ALL</span> to confirm:
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={clearConfirm}
+              onChange={(e) => setClearConfirm(e.target.value)}
+              placeholder="DELETE ALL"
+              className="input-field py-2 text-sm mono flex-1"
+            />
+            <button
+              onClick={handleClearAll}
+              disabled={clearConfirm !== 'DELETE ALL' || clearing}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-status-danger hover:bg-status-danger/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 flex items-center gap-2"
+            >
+              <Trash2 size={14} />
+              {clearing ? 'Clearing...' : 'Clear All Submissions'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 

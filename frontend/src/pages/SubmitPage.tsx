@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { submitProject } from '../lib/api';
-import { CheckCircle, AlertCircle, Rocket, GitFork, Globe, Video, User, Mail, Folder } from 'lucide-react';
+import { CheckCircle, AlertCircle, GitFork, Globe, Video, User, Mail, Folder } from 'lucide-react';
+import { motion, type Variants } from 'framer-motion';
 
 export function SubmitPage() {
   const [form, setForm] = useState({
@@ -35,69 +36,96 @@ export function SubmitPage() {
     }
   };
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut", staggerChildren: 0.1 } }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  };
+
   if (success) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-6">
-        <div className="max-w-md w-full text-center animate-fade-in">
-          <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-[85vh] flex items-center justify-center px-6">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="max-w-md w-full text-center"
+        >
+          <motion.div variants={itemVariants} className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(0,229,153,0.15)]">
             <CheckCircle className="text-accent" size={40} />
-          </div>
-          <h1 className="text-3xl font-bold text-text-primary mb-3">You're in! 🚀</h1>
-          <p className="text-text-secondary text-lg mb-2">
-            Your submission has been received.
-          </p>
-          <p className="text-text-muted text-sm mb-8">
-            Verification will begin automatically — we'll check your live URL, GitHub repo, and commit history.
-            No action needed from your side.
-          </p>
-          <div className="card p-4 text-left">
-            <p className="text-xs text-text-dim uppercase tracking-widest mb-2 font-medium">What happens next</p>
-            <ul className="space-y-2 text-sm text-text-secondary">
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">•</span>
-                We ping your live URL to confirm it's up
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">•</span>
-                We scan your GitHub repo for architecture signals
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">•</span>
-                A human judge will review your demo video
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">•</span>
-                Your project stays monitored until judging ends
-              </li>
+          </motion.div>
+          
+          <motion.h1 variants={itemVariants} className="text-4xl font-extrabold text-text-primary mb-4 tracking-tight">
+            You're in!
+          </motion.h1>
+          
+          <motion.p variants={itemVariants} className="text-text-secondary text-lg mb-8 leading-relaxed">
+            Your submission has been securely received. Verification will begin automatically in the background. No further action needed.
+          </motion.p>
+          
+          <motion.div variants={itemVariants} className="card p-6 text-left mb-8 bg-base-elevated/50 backdrop-blur-sm border-border-subtle hover:border-accent/30 transition-colors">
+            <p className="text-xs text-text-dim uppercase tracking-widest mb-4 font-semibold">What happens next</p>
+            <ul className="space-y-3.5 text-sm text-text-secondary">
+              {[
+                "We ping your live URL to confirm it's up",
+                "We scan your GitHub repo for architecture signals",
+                "A human judge will review your demo video",
+                "Your project stays monitored until judging ends"
+              ].map((text, i) => (
+                <motion.li 
+                  key={i}
+                  variants={itemVariants}
+                  className="flex items-start gap-3"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0 shadow-[0_0_8px_rgba(0,229,153,0.8)]" />
+                  <span className="leading-relaxed">{text}</span>
+                </motion.li>
+              ))}
             </ul>
-          </div>
-          <button
+          </motion.div>
+          
+          <motion.button
+            variants={itemVariants}
             onClick={() => { setSuccess(false); setForm({ projectName: '', participantName: '', participantEmail: '', liveUrl: '', githubRepoUrl: '', demoVideoUrl: '' }); }}
-            className="btn-secondary mt-6"
+            className="btn-secondary px-8 py-3 w-full sm:w-auto"
           >
             Submit another project
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-6 py-16">
-      <div className="max-w-lg w-full animate-slide-up">
+    <div className="min-h-[85vh] flex items-center justify-center px-6 py-20 relative overflow-hidden">
+      {/* Subtle background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/5 blur-[120px] rounded-full pointer-events-none" />
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="max-w-xl w-full relative z-10"
+      >
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5">
-            <Rocket className="text-accent" size={28} />
+        <div className="text-center mb-12">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-base-elevated to-base border border-border-subtle flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-accent">
+              <path d="M21 7.5L12 3L3 7.5M21 7.5V16.5L12 21M21 7.5L12 12M3 7.5V16.5L12 21M3 7.5L12 12M12 21V12M8.5 12L11 14.5L16.5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
-          <h1 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-text-primary mb-4 tracking-tight">
             Submit your project
           </h1>
-          <p className="text-text-secondary text-base">
-            Almost there — just paste your links and you're done.
+          <p className="text-text-secondary text-lg mb-2">
+            Almost there — paste your links to begin verification.
           </p>
-          <p className="text-text-dim text-sm mt-1">
-            No API tokens, no file uploads, no extra steps.
+          <p className="text-text-dim text-sm">
+            No API tokens, no file uploads, no extra steps required.
           </p>
         </div>
 
@@ -207,10 +235,12 @@ export function SubmitPage() {
             </div>
           )}
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             type="submit"
             disabled={submitting}
-            className="btn-primary w-full text-base py-3.5"
+            className="btn-primary w-full text-base py-4 mt-4 shadow-[0_0_20px_rgba(0,229,153,0.15)]"
           >
             {submitting ? (
               <>
@@ -219,19 +249,20 @@ export function SubmitPage() {
               </>
             ) : (
               <>
-                <Rocket size={18} />
                 Submit Project
               </>
             )}
-          </button>
+          </motion.button>
         </form>
 
         {/* Trust note */}
-        <p className="text-center text-xs text-text-dim mt-8 max-w-sm mx-auto leading-relaxed">
-          We never ask for your Zerops API token or any account credentials.
-          Verification uses only your public URL and public GitHub repo.
-        </p>
-      </div>
+        <div className="mt-10 pt-8 border-t border-border-subtle text-center">
+          <p className="text-xs text-text-dim max-w-sm mx-auto leading-relaxed">
+            We never ask for your Zerops API token or any account credentials.
+            Verification uses only your public URL and public GitHub repo.
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

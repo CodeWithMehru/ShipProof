@@ -92,6 +92,37 @@ ShipProof automates what can be honestly automated without violating anyone's ac
 
 ---
 
+## Product Walkthrough
+
+1. **Participant flow (public)**
+   - The participant navigates to the public submission page (no login required).
+   - They fill in five exact fields: Project Name, Participant Name, Email, Live URL, GitHub Repository, and Demo Video URL.
+   - Upon submission, they see a confirmation screen explaining that verification runs automatically in the background (checking the live URL, scanning the GitHub repo for architecture signals, monitoring uptime, and verifying commit authenticity) with no further action needed from their side.
+
+2. **Judge panel**
+   - After logging in, judges see the main dashboard listing all submissions along with quick-glance status indicators.
+   - Clicking a row opens the submission detail view, which visualizes the uptime chart, commit distribution chart, detected services, and dependency hints.
+   - Judges use a manual "Dashboard shown in video?" checkbox to confirm managed service usage from the demo video.
+   - Judges can then complete the scoring form (Idea, Execution, Zerops Usage) directly on the detail page.
+   - *Note: Judges cannot access the sponsor report or the event settings.*
+
+3. **Admin / Organizer panel**
+   - Organizers have all judge capabilities, plus access to two additional tools.
+   - **Report Page**: View aggregate statistics (total projects, uptime %, average scores, tech stack distribution) and export raw submission data to CSV.
+   - **Settings Page**: Dynamically configure the hackathon event window (start date, end date, judging deadline) without touching environment variables or redeploying the app.
+   - **Delete Features**: Organizers can permanently delete a single submission from the detail page/dashboard, or use the "Clear all submissions" Danger Zone action in settings to securely reset the platform between events.
+
+4. **Demo credentials for reviewers**
+   Use these credentials to log in and explore both roles on the live platform:
+   | Role | Email | Password |
+   |---|---|---|
+   | Judge | `judge@shipproof.dev` | `judge123` |
+   | Organizer/Admin | `admin@shipproof.dev` | `changeme123` |
+   
+   *(Note: These are demo credentials for hackathon evaluation purposes and must be rotated before real production use).*
+
+---
+
 ## Best Use of Zerops
 
 ShipProof is itself deployed on Zerops as a **5-service architecture** — making it a real, self-referential example of the kind of multi-service project the hackathon rules require:
@@ -212,10 +243,85 @@ After deployment:
 
 ## AI Tool Disclosure
 
-This project was built with the assistance of AI coding tools (Antigravity/Claude) for:
-- Code generation and scaffolding
-- TypeScript type definitions
-- UI component implementation
-- README drafting
+The project idea, the choice of what operational problem to solve, the verification philosophy (what to automate vs. what to leave to human judgment), the tech stack choices, and the overall system architecture were specified and directed by the developer (Mehraan / CodeWithMehru). 
 
-All AI-generated code was reviewed, tested, and verified by the developer. The architectural decisions, verification philosophy, and product design were human-directed. AI was used as an accelerator, not as the architect.
+The UI/UX design direction and visual identity were also specified by the developer.
+
+Claude (Anthropic's AI model) was used as the implementation tool — it wrote the actual code, including backend logic (API routes, worker verification logic, database schema, deployment configuration), under direct developer instruction and iterative debugging across the build process.
+
+This project reflects genuine collaborative development: human-directed architecture and product decisions, combined with AI-assisted implementation, consistent with hackathon policies requiring disclosure and meaningful original contribution from the participant. AI was used as an accelerator, not as the architect.
+
+---
+
+## Verification Layers — Precise Behavior (as implemented and tested)
+
+This section documents what each layer actually does, based on code that has been run end-to-end. It supersedes any higher-level summary elsewhere in this document where there is a discrepancy.
+
+### Layer 1 — Liveness + Zerops Hosting Detection
+
+Pings the submitted live URL using `fetch` with a 10-second timeout and records HTTP status code and response time. Simultaneously tests the hostname against a Zerops subdomain pattern (`/\.zerops\.app\b/i`). Reports one of three distinct states — not a vague single binary:
+
+| Outcome | What it means |
+|---|---|
+| **Yes** (confirmed Zerops subdomain) | URL hostname contains `.zerops.app` — definitively Zerops-hosted |
+| **Custom Domain** | URL does not match the Zerops pattern — organizer must manually confirm hosting |
+| **—** (dash) | Verification has not yet run for this submission |
+
+"Custom Domain" is not a flag — it is neutral. It means the system cannot auto-confirm the host and is handing off to a human. The system never claims false certainty in either direction.
+
+Liveness is re-checked every 15 minutes via `node-cron` for the full judging window. The scheduler queries live submission rows fresh on every cycle — once a submission is deleted, the next cycle simply doesn't find it and never pings it again.
+
+### Layer 2 — Architecture via GitHub API
+
+Fetches `zerops.yaml` directly from the **root** of the submitted GitHub repo using the GitHub REST API (authenticated with a PAT to avoid rate-limiting). Parses the file for `setup:` blocks and counts declared services.
+
+**Important structural note:** Zerops requires a single `zerops.yaml` at the repository root, even for monorepos. For a monorepo with multiple services (frontend, api, worker), each service gets its own `setup:` block within that single file. ShipProof's own deployment is structured exactly this way — its `zerops.yaml` declares three `setup:` blocks for the frontend, api, and worker services — which is why it can serve as a real self-referential reference for participants building similar multi-service projects.
+
+As a **weak, non-authoritative signal only**, the layer also scans `package.json`, `requirements.txt`, and `go.mod` for known database and cache client library names (e.g., `pg`, `prisma`, `ioredis`, `psycopg2`). This is stored as a "dependency hint" and is explicitly labeled "weak signal, not verified" everywhere in the UI. It can be gamed by adding imports without using them and is never used as a basis for any automated verdict.
+
+### Layer 3 — Managed Services (Human-Assisted)
+
+Fully manual. A checkbox in the judge review form asks: "Dashboard confirmed in video?" A judge watches the participant's demo video and checks the box if the Zerops project dashboard is visible showing the services list. This step cannot be automated without a Zerops API token belonging to the participant, which ShipProof deliberately does not collect.
+
+### Layer 4 — Commit Authenticity (Automated Signal, Human Verdict)
+
+Fetches commit history from the GitHub repo via the GitHub API. Compares each commit's timestamp against the organizer-configured event window (`eventStart` → `eventEnd` from the database). Flags the result as:
+
+| Flag | Meaning |
+|---|---|
+| **Healthy** | Commits are distributed across multiple hours within the event window |
+| **Review Suggested** | Suspicious pattern — see below |
+| **Insufficient Data** | Fewer than 3 commits total — not enough to analyze |
+
+**"Review Suggested" triggers when any of these are true:**
+- Zero commits fall within the event window (all commits are before or after the window)
+- More than 2× as many commits exist before the window as during it (suggests the project was pre-built)
+- More than 5 commits but concentrated in very few unique hours relative to the event length (suggests a bulk commit dump)
+
+**A submission with zero commits inside the window will always show "Review Suggested" with no commit chart.** This is intentional flagging behavior, not a bug. It means either: (a) the code predates the event, (b) the event window in settings hasn't been corrected yet, or (c) the organizer needs to verify the submission date manually. The flag is a signal for a human reviewer — it is never an automatic rejection, and the UI says so explicitly.
+
+### Submission Deletion
+
+Organizer-only. Two endpoints are provided:
+
+- **`DELETE /api/submissions/:id`** — Permanently deletes a single submission. Automatically cascades to all related `verification_results`, `uptime_logs`, and `judge_reviews` rows via PostgreSQL `ON DELETE CASCADE` constraints defined at the schema level. Confirmed working in production: deleting one submission row drops all three related child tables to zero rows simultaneously.
+
+- **`DELETE /api/submissions`** — Deletes all submissions at once. Intended for resetting the platform between hackathons. Requires typing `DELETE ALL` in the UI confirmation input — a single click is not enough to trigger this action.
+
+Both actions are always manually triggered. There is no automatic or scheduled deletion.
+
+---
+
+## Reusing the Platform Across Hackathons
+
+The event window (start date, end date) and the judging deadline are stored in the database and configurable from the `/settings` page — they are **not hardcoded in environment variables or the source code**. This means the same deployed instance can be reused for a new hackathon without a code change, a redeployment, or a restart.
+
+Before a new hackathon starts, an organizer:
+1. Navigates to `/settings`
+2. Updates the event start, event end, and judging end dates to match the new event
+3. Optionally uses the Danger Zone "Clear all submissions" action to remove the previous hackathon's data
+
+The worker picks up the new event window within 5 minutes (the in-memory cache TTL). All future verification jobs will use the updated dates immediately — no restart required.
+
+The Deployment Instructions section above mentions `EVENT_START`, `EVENT_END`, and `JUDGING_END` environment variables. Those are now obsolete — **do not set them**. The worker no longer reads them. All date configuration goes through the `/settings` page and the `event_settings` database table.
+

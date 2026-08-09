@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { getSponsorReport, downloadCSVReport, type SponsorReport } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -48,7 +49,11 @@ export function ReportPage() {
   ].filter(d => d.value > 0);
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 animate-fade-in">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-5xl mx-auto px-6 py-12"
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
@@ -174,7 +179,7 @@ export function ReportPage() {
           This report reflects automated signals + human reviews combined.
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

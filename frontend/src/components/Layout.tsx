@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { Shield, LayoutDashboard, FileBarChart, LogOut, Send, Settings } from 'lucide-react';
+import { LayoutDashboard, FileBarChart, LogOut, Send, Settings } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function Layout() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -15,8 +16,10 @@ export function Layout() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-              <Shield className="w-4.5 h-4.5 text-accent" size={18} />
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-all duration-300">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-accent">
+                <path d="M21 7.5L12 3L3 7.5M21 7.5V16.5L12 21M21 7.5L12 12M3 7.5V16.5L12 21M3 7.5L12 12M12 21V12M8.5 12L11 14.5L16.5 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
             <span className="text-lg font-bold tracking-tight text-text-primary">
               Ship<span className="text-accent">Proof</span>
@@ -106,8 +109,19 @@ export function Layout() {
       </header>
 
       {/* ─── Main Content ───────────────────────────────────────── */}
-      <main className="flex-1">
-        <Outlet />
+      <main className="flex-1 relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="w-full h-full"
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* ─── Footer ─────────────────────────────────────────────── */}

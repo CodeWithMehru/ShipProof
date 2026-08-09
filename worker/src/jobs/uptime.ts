@@ -54,7 +54,9 @@ export async function checkUptime(submissionId: string): Promise<void> {
  * "Active" means status is not 'pending' and judging hasn't ended.
  */
 export async function runAllUptimeChecks(): Promise<void> {
-  const judgingEnd = new Date(process.env.JUDGING_END || '2099-12-31T23:59:59Z');
+  const { getEventSettings } = await import('../lib/eventSettings');
+  const settings = await getEventSettings();
+  const judgingEnd = settings.judgingEnd;
 
   if (new Date() > judgingEnd) {
     console.log('[Uptime] Judging period has ended — skipping uptime checks');

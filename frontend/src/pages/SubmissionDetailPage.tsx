@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getSubmissionDetail, type SubmissionDetail } from '../lib/api';
+import { motion } from 'framer-motion';
+import { getSubmissionDetail, deleteSubmission, type SubmissionDetail } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { StatusBadge } from '../components/StatusBadge';
 import { UptimeChart } from '../components/UptimeChart';
@@ -16,6 +17,7 @@ import {
   CheckCircle,
   Clock,
   Server,
+  Trash2,
 } from 'lucide-react';
 
 export function SubmissionDetailPage() {
@@ -43,6 +45,17 @@ export function SubmissionDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!token || !data) return;
+    if (!window.confirm(`Permanently delete "${data.projectName}" and all its verification data? This cannot be undone.`)) return;
+    try {
+      await deleteSubmission(token, data.id);
+      navigate('/dashboard');
+    } catch (err) {
+      alert(`Failed to delete: ${(err as Error).message}`);
+    }
+  };
+
   if (loading || !data) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-8">
@@ -62,7 +75,11 @@ export function SubmissionDetailPage() {
   const myReview = data.reviews.find((r) => r.judge?.id === user?.id);
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 animate-fade-in">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-6xl mx-auto px-6 py-10"
+    >
       {/* Back button */}
       <Link
         to="/dashboard"
@@ -99,6 +116,15 @@ export function SubmissionDetailPage() {
             <Video size={14} />
             Demo
           </a>
+          {user?.role === 'organizer' && (
+            <button
+              onClick={handleDelete}
+              className="btn-secondary text-sm text-status-danger hover:bg-status-danger/10 border-status-danger/30"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          )}
         </div>
       </div>
 
@@ -290,7 +316,7 @@ export function SubmissionDetailPage() {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

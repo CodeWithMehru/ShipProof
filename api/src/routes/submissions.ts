@@ -209,3 +209,46 @@ submissionsRouter.get('/:id/uptime', authMiddleware, async (req: Request, res: R
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * DELETE /api/submissions/:id
+ * Organizer-only — permanently delete a single submission and all its
+ * cascaded data (verification_results, uptime_logs, judge_reviews).
+ * Cascade is enforced at the database level via ON DELETE CASCADE.
+ */
+submissionsRouter.delete('/:id', authMiddleware, requireRole('organizer'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.submission.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    await prisma.submission.delete({ where: { id } });
+
+    console.log(`[Submissions] Deleted submission ${id} (${existing.projectName}) by organizer ${req.user?.email}`);
+    res.status(200).json({ message: `Submission "${existing.projectName}" deleted.` });
+  } catch (error) {
+    console.error('[Submissions] Delete error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * DELETE /api/submissions
+ * Organizer-only — delete ALL submissions (and their cascaded data) in one
+ * operation. Intended for resetting the platform between hackathons.
+ * Uses deleteMany which triggers the DB-level CASCADE on related rows.
+ */
+submissionsRouter.delete('/', authMiddleware, requireRole('organizer'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await prisma.submission.deleteMany({});
+    console.log(`[Submissions] Cleared all ${result.count} submissions by organizer ${req.user?.email}`);
+    res.status(200).json({ message: `All ${result.count} submissions have been permanently deleted.`, count: result.count });
+  } catch (error) {
+    console.error('[Submissions] Clear-all error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSubmissions, type SubmissionSummary } from '../lib/api';
+import { getSubmissions, deleteSubmission, type SubmissionSummary } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { StatusBadge } from '../components/StatusBadge';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   Search,
   Filter,
@@ -11,12 +12,14 @@ import {
   RefreshCw,
   Layers,
   Activity,
+  Trash2,
+  Inbox,
 } from 'lucide-react';
 
 const STATUS_FILTERS = ['all', 'pending', 'verifying', 'verified', 'flagged'];
 
 export function DashboardPage() {
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,18 @@ export function DashboardPage() {
     setRefreshing(false);
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation(); // prevent row click navigating away
+    if (!token) return;
+    if (!window.confirm(`Permanently delete "${name}" and all its verification data? This cannot be undone.`)) return;
+    try {
+      await deleteSubmission(token, id);
+      setSubmissions((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      alert(`Failed to delete: ${(err as Error).message}`);
+    }
+  };
+
   const filtered = submissions.filter((s) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -67,13 +82,31 @@ export function DashboardPage() {
   const verifiedCount = submissions.filter((s) => s.status === 'verified').length;
   const flaggedCount = submissions.filter((s) => s.status === 'flagged').length;
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1, 
+      transition: { staggerChildren: 0.05, ease: "easeOut" }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-6 py-10">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center justify-between mb-8"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Submissions</h1>
-          <p className="text-text-muted text-sm mt-1">
+          <h1 className="text-3xl font-extrabold text-text-primary tracking-tight">Submissions</h1>
+          <p className="text-text-muted text-sm mt-1.5">
             {totalCount} total submissions · {liveCount} live · {flaggedCount} flagged
           </p>
         </div>
@@ -81,30 +114,40 @@ export function DashboardPage() {
           <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           Refresh
         </button>
-      </div>
+      </motion.div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <div className="stat-card">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-4 gap-5 mb-10"
+      >
+        <motion.div variants={itemVariants} className="stat-card bg-base-elevated/50 backdrop-blur-sm border-border-subtle shadow-sm hover:border-text-dim transition-colors">
           <div className="stat-value">{totalCount}</div>
-          <div className="stat-label">Total Submissions</div>
-        </div>
-        <div className="stat-card">
+          <div className="stat-label uppercase tracking-wider text-xs font-semibold">Total Submissions</div>
+        </motion.div>
+        <motion.div variants={itemVariants} className="stat-card bg-base-elevated/50 backdrop-blur-sm border-border-subtle shadow-sm hover:border-status-healthy/50 transition-colors">
           <div className="stat-value text-status-healthy">{liveCount}</div>
-          <div className="stat-label">Currently Live</div>
-        </div>
-        <div className="stat-card">
+          <div className="stat-label uppercase tracking-wider text-xs font-semibold">Currently Live</div>
+        </motion.div>
+        <motion.div variants={itemVariants} className="stat-card bg-base-elevated/50 backdrop-blur-sm border-border-subtle shadow-sm hover:border-accent/50 transition-colors">
           <div className="stat-value text-accent">{verifiedCount}</div>
-          <div className="stat-label">Verified</div>
-        </div>
-        <div className="stat-card">
+          <div className="stat-label uppercase tracking-wider text-xs font-semibold">Verified</div>
+        </motion.div>
+        <motion.div variants={itemVariants} className="stat-card bg-base-elevated/50 backdrop-blur-sm border-border-subtle shadow-sm hover:border-status-warning/50 transition-colors">
           <div className="stat-value text-status-warning">{flaggedCount}</div>
-          <div className="stat-label">Flagged for Review</div>
-        </div>
-      </div>
+          <div className="stat-label uppercase tracking-wider text-xs font-semibold">Flagged for Review</div>
+        </motion.div>
+      </motion.div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="flex items-center gap-4 mb-6"
+      >
         <div className="relative flex-1 max-w-sm">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim" />
           <input
@@ -131,7 +174,7 @@ export function DashboardPage() {
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -151,29 +194,49 @@ export function DashboardPage() {
                 </th>
                 <th className="text-center text-xs font-medium text-text-dim uppercase tracking-wider px-4 py-3">Authenticity</th>
                 <th className="text-center text-xs font-medium text-text-dim uppercase tracking-wider px-4 py-3">Reviewed</th>
+                {user?.role === 'organizer' && (
+                  <th className="px-4 py-3 text-xs font-medium text-text-dim uppercase tracking-wider text-center">Delete</th>
+                )}
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody>
+            <motion.tbody
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="table-row">
-                    {Array.from({ length: 9 }).map((_, j) => (
+                  <tr key={i} className="border-b border-border-subtle">
+                    {Array.from({ length: (user?.role === 'organizer' ? 10 : 9) }).map((_, j) => (
                       <td key={j} className="px-4 py-4">
-                        <div className="skeleton h-4 w-20 rounded" />
+                        <div className="skeleton h-4 w-20 rounded opacity-50" />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-text-dim text-sm">
-                    No submissions found
+                  <td colSpan={10} className="px-4 py-24 text-center">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center justify-center text-text-dim"
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-base-elevated flex items-center justify-center mb-4">
+                        <Inbox size={28} className="text-text-muted" />
+                      </div>
+                      <p className="text-base font-medium text-text-primary mb-1">No submissions found</p>
+                      <p className="text-sm">Try adjusting your filters or search query.</p>
+                    </motion.div>
                   </td>
                 </tr>
               ) : (
-                filtered.map((s) => (
-                  <tr
+                <AnimatePresence>
+                  {filtered.map((s) => (
+                    <motion.tr
+                      variants={itemVariants}
+                      layout
                     key={s.id}
                     className="table-row cursor-pointer"
                     onClick={() => navigate(`/dashboard/${s.id}`)}
@@ -234,13 +297,25 @@ export function DashboardPage() {
                         <span className="text-text-dim text-xs">—</span>
                       )}
                     </td>
+                    {user?.role === 'organizer' && (
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          onClick={(e) => handleDelete(e, s.id, s.projectName)}
+                          className="p-1.5 rounded-md text-text-dim hover:text-status-danger hover:bg-status-danger/10 transition-all duration-150"
+                          title="Delete submission"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
                     <td className="px-4 py-3.5 text-right">
                       <ChevronRight size={16} className="text-text-dim" />
                     </td>
-                  </tr>
-                ))
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
               )}
-            </tbody>
+            </motion.tbody>
           </table>
         </div>
       </div>
